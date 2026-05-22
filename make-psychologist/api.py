@@ -124,13 +124,14 @@ async def text_to_speech(req: TTSRequest) -> StreamingResponse:
             headers={"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"},
             json={
                 "text": req.text,
-                "model_id": "eleven_turbo_v2_5",
+                "model_id": "eleven_multilingual_v2",
                 "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
             },
         )
 
     if resp.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"ElevenLabs error: {resp.text}")
+        print(f"[ElevenLabs] HTTP {resp.status_code}: {resp.text}")
+        raise HTTPException(status_code=502, detail=f"ElevenLabs error {resp.status_code}: {resp.text}")
 
     audio_bytes = resp.content
     return StreamingResponse(
