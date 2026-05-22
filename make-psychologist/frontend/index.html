@@ -4,26 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Psyche — AI Psychologist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ── Reset & Base ─────────────────────────────────────── */
+    /* ── Reset ────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:         #080810;
-      --surface:    #0f0f1a;
-      --surface-2:  #14141f;
-      --border:     rgba(255,255,255,0.06);
-      --border-h:   rgba(255,255,255,0.12);
-      --accent:     #7c6af7;
-      --accent-dim: rgba(124,106,247,0.15);
-      --accent-glow:rgba(124,106,247,0.35);
-      --text:       #e8e8f0;
-      --text-dim:   #6b6b80;
-      --text-muted: #3a3a50;
-      --user-bg:    rgba(124,106,247,0.12);
-      --ai-bg:      rgba(255,255,255,0.03);
-      --radius:     14px;
-      --font:       'Inter', system-ui, -apple-system, sans-serif;
+      --bg:          #F7F6FF;
+      --surface:     #FFFFFF;
+      --surface-2:   #F0EFFE;
+      --border:      #E4E2F5;
+      --border-h:    #C4BFEE;
+      --accent:      #5A4FCF;
+      --accent-2:    #7B74E8;
+      --accent-dim:  rgba(90,79,207,0.08);
+      --accent-mid:  rgba(90,79,207,0.15);
+      --text:        #0D0C1A;
+      --text-dim:    #6B6880;
+      --text-muted:  #AAA8BF;
+      --user-bg:     #5A4FCF;
+      --ai-bg:       #FFFFFF;
+      --shadow-sm:   0 1px 3px rgba(90,79,207,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md:   0 4px 16px rgba(90,79,207,0.10), 0 1px 4px rgba(0,0,0,0.06);
+      --radius:      16px;
+      --radius-sm:   10px;
+      --font:        'Inter', system-ui, -apple-system, sans-serif;
     }
 
     html, body { height: 100%; overflow: hidden; }
@@ -36,26 +43,27 @@
       height: 100vh;
     }
 
-    /* ── Mosaic Grid Background ───────────────────────────── */
+    /* ── Dot-grid background (mosaic-grid-architecture) ──── */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-      background-size: 48px 48px;
+      background-image: radial-gradient(circle, #C4BFEE 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: 0.55;
       pointer-events: none;
       z-index: 0;
     }
 
-    /* Radial gradient vignette over the grid */
+    /* Soft radial light wash over the grid */
     body::after {
       content: '';
       position: fixed;
       inset: 0;
-      background: radial-gradient(ellipse 80% 80% at 50% 0%, rgba(124,106,247,0.06) 0%, transparent 60%),
-                  radial-gradient(ellipse 60% 40% at 80% 100%, rgba(100,80,220,0.04) 0%, transparent 50%);
+      background:
+        radial-gradient(ellipse 70% 60% at 60% 0%,   rgba(255,255,255,0.92) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 100% 100%, rgba(255,255,255,0.70) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 0%   80%,  rgba(255,255,255,0.60) 0%, transparent 50%);
       pointer-events: none;
       z-index: 0;
     }
@@ -64,164 +72,224 @@
     .sidebar {
       position: relative;
       z-index: 10;
-      width: 260px;
+      width: 268px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
+      gap: 4px;
       border-right: 1px solid var(--border);
-      background: rgba(8,8,16,0.7);
-      backdrop-filter: blur(20px);
-      padding: 24px 16px;
-      gap: 8px;
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      padding: 20px 14px 20px;
     }
 
+    /* Logo */
     .logo {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
-      margin-bottom: 8px;
+      padding: 8px 10px 16px;
     }
 
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .logo-mark {
+      position: relative;
+      width: 34px;
+      height: 34px;
       flex-shrink: 0;
-      box-shadow: 0 0 16px var(--accent-glow);
     }
 
-    .logo-icon svg { width: 18px; height: 18px; }
+    /* Mosaic 2×2 tile logo */
+    .logo-mark-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      width: 34px;
+      height: 34px;
+    }
 
-    .logo-text {
+    .lm-tile {
+      border-radius: 4px;
+    }
+
+    .lm-tile:nth-child(1) { background: var(--accent); }
+    .lm-tile:nth-child(2) { background: var(--accent-2); opacity: 0.6; }
+    .lm-tile:nth-child(3) { background: var(--accent-2); opacity: 0.35; }
+    .lm-tile:nth-child(4) { background: var(--accent); opacity: 0.8; }
+
+    .logo-copy { display: flex; flex-direction: column; gap: 1px; }
+
+    .logo-name {
       font-size: 15px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
+      font-weight: 700;
+      letter-spacing: -0.03em;
       color: var(--text);
     }
 
-    .logo-sub {
+    .logo-tag {
       font-size: 10px;
       font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-    }
-
-    .sidebar-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 8px 0;
-    }
-
-    .sidebar-label {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-muted);
-      padding: 0 12px;
-      margin-top: 4px;
     }
 
-    .new-chat-btn {
+    /* Nav buttons */
+    .new-btn {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
       padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      border: 1.5px dashed var(--border-h);
       background: transparent;
       color: var(--text-dim);
       font-size: 13px;
       font-family: var(--font);
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.14s ease;
       width: 100%;
       text-align: left;
+      margin-bottom: 6px;
     }
 
-    .new-chat-btn:hover {
+    .new-btn:hover {
       background: var(--accent-dim);
       border-color: var(--accent);
-      color: var(--text);
+      color: var(--accent);
     }
 
-    .new-chat-btn svg { opacity: 0.6; flex-shrink: 0; }
-    .new-chat-btn:hover svg { opacity: 1; }
+    .new-btn svg { transition: transform 0.14s; }
+    .new-btn:hover svg { transform: rotate(90deg); }
 
-    /* MBTI selector */
-    .mbti-label {
+    /* Section heading */
+    .sec-head {
       font-size: 10px;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--text-muted);
-      padding: 0 12px;
-      margin-top: 12px;
+      padding: 10px 12px 6px;
+    }
+
+    /* MBTI select */
+    .mbti-wrap {
+      position: relative;
+    }
+
+    .mbti-wrap::after {
+      content: '';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid var(--text-muted);
+      pointer-events: none;
     }
 
     .mbti-select {
       width: 100%;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
       color: var(--text-dim);
-      font-size: 12px;
+      font-size: 12.5px;
       font-family: var(--font);
-      padding: 9px 12px;
+      font-weight: 500;
+      padding: 9px 32px 9px 12px;
       cursor: pointer;
       outline: none;
       appearance: none;
       -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b80' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      transition: border-color 0.15s;
+      transition: border-color 0.14s, box-shadow 0.14s;
+      box-shadow: var(--shadow-sm);
     }
 
-    .mbti-select:focus { border-color: var(--accent); color: var(--text); }
+    .mbti-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+      color: var(--text);
+    }
 
-    .mbti-select option { background: #0f0f1a; }
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0;
+    }
 
-    /* Stat pills */
-    .stat-row {
+    /* Stat cards */
+    .stats {
       display: flex;
       flex-direction: column;
       gap: 6px;
       margin-top: auto;
-      padding-top: 12px;
+      padding-top: 10px;
     }
 
-    .stat-pill {
+    .stat-card {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 8px 12px;
-      border-radius: 8px;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
       background: var(--surface);
       border: 1px solid var(--border);
-      font-size: 11px;
+      box-shadow: var(--shadow-sm);
+      font-size: 11.5px;
     }
 
-    .stat-key { color: var(--text-dim); }
-    .stat-val { color: var(--text); font-weight: 500; }
+    .stat-k { color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+    .stat-v { color: var(--text); font-weight: 600; font-size: 11px; }
 
-    .status-dot {
-      width: 6px;
-      height: 6px;
+    .pulse {
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
-      background: #4ade80;
-      box-shadow: 0 0 6px #4ade80;
-      display: inline-block;
-      margin-right: 6px;
+      background: #22C55E;
+      position: relative;
     }
 
-    /* ── Main Chat Area ────────────────────────────────────── */
+    .pulse::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 1.5px solid #22C55E;
+      animation: pulseRing 2s ease infinite;
+      opacity: 0;
+    }
+
+    @keyframes pulseRing {
+      0%   { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    /* Mosaic accent patch in sidebar footer */
+    .sidebar-mosaic {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 3px;
+      padding: 12px 10px 4px;
+      opacity: 0.18;
+    }
+
+    .sm-tile {
+      height: 8px;
+      border-radius: 2px;
+      background: var(--accent);
+    }
+
+    .sm-tile:nth-child(3n+1) { opacity: 1; }
+    .sm-tile:nth-child(3n+2) { opacity: 0.5; }
+    .sm-tile:nth-child(3n)   { opacity: 0.25; }
+
+    /* ── Main area ────────────────────────────────────────── */
     .main {
       position: relative;
       z-index: 10;
@@ -231,42 +299,50 @@
       min-width: 0;
     }
 
-    /* Header bar */
+    /* Top bar */
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 28px;
+      padding: 14px 28px;
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(10px);
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .topbar-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--text-dim);
     }
 
-    .topbar-badge {
-      display: flex;
+    .tag-pill {
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       font-size: 11px;
-      color: var(--text-dim);
-      background: var(--surface);
-      border: 1px solid var(--border);
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-mid);
       border-radius: 20px;
-      padding: 4px 10px;
+      padding: 3px 10px;
     }
 
-    /* Messages */
+    /* Messages scroll area */
     .messages {
       flex: 1;
       overflow-y: auto;
-      padding: 32px 0;
+      padding: 24px 0 8px;
       display: flex;
       flex-direction: column;
-      gap: 0;
       scrollbar-width: thin;
       scrollbar-color: var(--border) transparent;
     }
@@ -275,89 +351,147 @@
     .messages::-webkit-scrollbar-track { background: transparent; }
     .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-    /* Welcome state */
+    /* ── Welcome screen ───────────────────────────────────── */
     .welcome {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       flex: 1;
-      gap: 24px;
-      padding: 40px;
+      gap: 28px;
+      padding: 48px 32px;
       text-align: center;
     }
 
-    .welcome-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      background: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 40px var(--accent-glow);
+    /* Big mosaic hero grid */
+    .hero-mosaic {
+      display: grid;
+      grid-template-columns: repeat(4, 20px);
+      grid-template-rows: repeat(4, 20px);
+      gap: 5px;
     }
 
-    .welcome-icon svg { width: 28px; height: 28px; }
+    .hm-cell {
+      border-radius: 5px;
+      background: var(--accent);
+    }
+
+    /* Varying opacity for mosaic effect */
+    .hm-cell:nth-child(1)  { opacity:1.0; }
+    .hm-cell:nth-child(2)  { opacity:0.5; }
+    .hm-cell:nth-child(3)  { opacity:0.2; }
+    .hm-cell:nth-child(4)  { opacity:0.6; }
+    .hm-cell:nth-child(5)  { opacity:0.3; }
+    .hm-cell:nth-child(6)  { opacity:0.9; }
+    .hm-cell:nth-child(7)  { opacity:0.4; }
+    .hm-cell:nth-child(8)  { opacity:0.15; }
+    .hm-cell:nth-child(9)  { opacity:0.7; }
+    .hm-cell:nth-child(10) { opacity:0.25; }
+    .hm-cell:nth-child(11) { opacity:1.0; }
+    .hm-cell:nth-child(12) { opacity:0.45; }
+    .hm-cell:nth-child(13) { opacity:0.2; }
+    .hm-cell:nth-child(14) { opacity:0.8; }
+    .hm-cell:nth-child(15) { opacity:0.35; }
+    .hm-cell:nth-child(16) { opacity:0.6; }
+
+    .welcome-head {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
 
     .welcome h2 {
-      font-size: 22px;
-      font-weight: 600;
-      letter-spacing: -0.02em;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text);
     }
 
     .welcome p {
       font-size: 14px;
       color: var(--text-dim);
-      max-width: 380px;
-      line-height: 1.6;
+      max-width: 400px;
+      line-height: 1.65;
+      font-weight: 400;
     }
 
-    .welcome-starters {
+    /* Starter cards */
+    .starters {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      max-width: 500px;
+      gap: 10px;
+      max-width: 520px;
       width: 100%;
     }
 
-    .starter-card {
+    .starter {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
       cursor: pointer;
       text-align: left;
+      font-family: var(--font);
+      transition: all 0.14s ease;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .starter::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.2s ease;
+    }
+
+    .starter:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .starter:hover::before { transform: scaleX(1); }
+
+    .starter-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 5px;
+    }
+
+    .starter-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .starter-body {
       font-size: 12px;
       color: var(--text-dim);
-      line-height: 1.5;
-      transition: all 0.15s ease;
-      font-family: var(--font);
+      line-height: 1.55;
     }
 
-    .starter-card:hover {
-      border-color: var(--accent);
-      color: var(--text);
-      background: var(--accent-dim);
-    }
-
-    .starter-card strong {
-      display: block;
-      color: var(--text);
-      font-size: 12px;
-      margin-bottom: 3px;
-    }
-
-    /* Message rows */
+    /* ── Message rows ─────────────────────────────────────── */
     .msg-row {
-      padding: 8px 28px;
+      padding: 6px 28px;
       display: flex;
       flex-direction: column;
-      animation: fadeSlide 0.2s ease;
+      animation: fadeUp 0.18s ease;
     }
 
-    @keyframes fadeSlide {
-      from { opacity: 0; transform: translateY(6px); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
@@ -365,112 +499,122 @@
     .msg-row.ai   { align-items: flex-start; }
 
     .msg-meta {
-      font-size: 10px;
+      font-size: 10.5px;
       color: var(--text-muted);
       margin-bottom: 5px;
       display: flex;
       align-items: center;
       gap: 6px;
+      font-weight: 500;
     }
 
-    .msg-avatar {
-      width: 20px;
-      height: 20px;
+    .ai-avatar {
+      width: 22px;
+      height: 22px;
       border-radius: 6px;
+      background: var(--accent);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
       flex-shrink: 0;
     }
 
-    .ai .msg-avatar { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
-    .user .msg-avatar { background: var(--surface-2); border: 1px solid var(--border); }
+    .ai-avatar svg { width: 12px; height: 12px; }
 
     .msg-bubble {
-      max-width: min(640px, 78%);
-      padding: 13px 17px;
+      max-width: min(620px, 76%);
+      padding: 13px 18px;
       border-radius: var(--radius);
       font-size: 13.5px;
-      line-height: 1.7;
+      line-height: 1.72;
     }
 
+    /* User bubble — solid accent */
     .user .msg-bubble {
       background: var(--user-bg);
-      border: 1px solid rgba(124,106,247,0.25);
-      color: var(--text);
+      color: #fff;
+      border-bottom-right-radius: 5px;
+      box-shadow: 0 2px 12px rgba(90,79,207,0.28);
     }
 
+    /* AI bubble — white card */
     .ai .msg-bubble {
       background: var(--ai-bg);
-      border: 1px solid var(--border);
       color: var(--text);
+      border: 1.5px solid var(--border);
+      border-bottom-left-radius: 5px;
+      box-shadow: var(--shadow-md);
     }
 
-    /* Streaming cursor */
+    /* Typing dots */
+    .typing {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 0;
+    }
+
+    .t-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.5;
+      animation: tBounce 1.1s ease infinite;
+    }
+
+    .t-dot:nth-child(2) { animation-delay: 0.15s; }
+    .t-dot:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes tBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+      30%           { transform: translateY(-5px); opacity: 1; }
+    }
+
+    /* Stream cursor */
     .cursor {
       display: inline-block;
       width: 2px;
       height: 14px;
       background: var(--accent);
-      margin-left: 2px;
+      margin-left: 1px;
       vertical-align: middle;
       border-radius: 1px;
-      animation: blink 0.8s ease infinite;
+      animation: cursorBlink 0.75s ease infinite;
     }
 
-    @keyframes blink {
+    @keyframes cursorBlink {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0; }
     }
 
-    /* Typing indicator */
-    .typing-indicator {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 10px 0;
-    }
-
-    .typing-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: typingBounce 1.2s ease infinite;
-    }
-
-    .typing-dot:nth-child(2) { animation-delay: 0.15s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.3s; }
-
-    @keyframes typingBounce {
-      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-      30%           { transform: translateY(-5px); opacity: 1; }
-    }
-
-    /* ── Input Area ────────────────────────────────────────── */
+    /* ── Input area ───────────────────────────────────────── */
     .input-area {
-      padding: 16px 28px 24px;
+      padding: 12px 28px 20px;
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
     }
 
-    .input-box {
+    .input-shell {
       display: flex;
       align-items: flex-end;
       gap: 10px;
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: var(--radius);
-      padding: 12px 14px;
-      transition: border-color 0.15s;
+      padding: 12px 12px 12px 16px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.14s, box-shadow 0.14s;
     }
 
-    .input-box:focus-within {
+    .input-shell:focus-within {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-dim);
+      box-shadow: 0 0 0 3px var(--accent-dim), var(--shadow-sm);
     }
 
-    .input-box textarea {
+    .input-shell textarea {
       flex: 1;
       background: transparent;
       border: none;
@@ -480,18 +624,18 @@
       font-family: var(--font);
       line-height: 1.6;
       resize: none;
-      max-height: 160px;
+      max-height: 150px;
       min-height: 22px;
       overflow-y: auto;
       scrollbar-width: thin;
     }
 
-    .input-box textarea::placeholder { color: var(--text-muted); }
+    .input-shell textarea::placeholder { color: var(--text-muted); }
 
     .send-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
       background: var(--accent);
       border: none;
       cursor: pointer;
@@ -499,17 +643,17 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all 0.15s;
-      opacity: 0.5;
+      transition: all 0.14s;
+      opacity: 0.35;
     }
 
-    .send-btn.active {
+    .send-btn.ready {
       opacity: 1;
-      box-shadow: 0 0 12px var(--accent-glow);
+      box-shadow: 0 2px 10px rgba(90,79,207,0.35);
     }
 
-    .send-btn:hover.active { transform: scale(1.05); }
-    .send-btn svg { width: 15px; height: 15px; }
+    .send-btn.ready:hover { transform: scale(1.06); box-shadow: 0 4px 16px rgba(90,79,207,0.45); }
+    .send-btn svg { width: 16px; height: 16px; }
 
     .input-hint {
       font-size: 11px;
@@ -518,164 +662,212 @@
       text-align: center;
     }
 
-    /* ── Mosaic decorative tiles ──────────────────────────── */
-    .mosaic-corner {
+    .kbd {
+      font-family: inherit;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    /* ── Floating mosaic decoration ──────────────────────── */
+    .deco-mosaic {
       position: fixed;
-      bottom: 80px;
-      right: 24px;
+      bottom: 90px;
+      right: 20px;
       display: grid;
-      grid-template-columns: repeat(3, 14px);
+      grid-template-columns: repeat(4, 10px);
       gap: 4px;
-      opacity: 0.15;
       pointer-events: none;
       z-index: 1;
     }
 
-    .mosaic-tile {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
+    .dm-tile {
+      width: 10px;
+      height: 10px;
+      border-radius: 2.5px;
       background: var(--accent);
     }
 
-    .mosaic-tile:nth-child(even) { opacity: 0.5; }
-    .mosaic-tile:nth-child(3n)   { opacity: 0.25; }
+    .dm-tile:nth-child(1)  { opacity: 0.60; }
+    .dm-tile:nth-child(2)  { opacity: 0.20; }
+    .dm-tile:nth-child(3)  { opacity: 0.80; }
+    .dm-tile:nth-child(4)  { opacity: 0.35; }
+    .dm-tile:nth-child(5)  { opacity: 0.15; }
+    .dm-tile:nth-child(6)  { opacity: 0.70; }
+    .dm-tile:nth-child(7)  { opacity: 0.40; }
+    .dm-tile:nth-child(8)  { opacity: 0.90; }
+    .dm-tile:nth-child(9)  { opacity: 0.55; }
+    .dm-tile:nth-child(10) { opacity: 0.25; }
+    .dm-tile:nth-child(11) { opacity: 0.75; }
+    .dm-tile:nth-child(12) { opacity: 0.10; }
 
     /* ── Responsive ───────────────────────────────────────── */
-    @media (max-width: 680px) {
+    @media (max-width: 700px) {
       .sidebar { display: none; }
       .topbar, .input-area { padding-left: 16px; padding-right: 16px; }
-      .msg-row { padding: 8px 16px; }
+      .msg-row { padding: 6px 16px; }
+      .starters { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-<!-- Sidebar -->
+<!-- ── Sidebar ─────────────────────────────────────────────── -->
 <aside class="sidebar">
   <div class="logo">
-    <div class="logo-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-        <path d="M12 2a8 8 0 1 0 0 16A8 8 0 0 0 12 2Z"/>
-        <path d="M12 6v6l4 2"/>
-        <circle cx="12" cy="18" r="3" fill="white" stroke="none"/>
-      </svg>
+    <div class="logo-mark">
+      <div class="logo-mark-grid">
+        <div class="lm-tile"></div>
+        <div class="lm-tile"></div>
+        <div class="lm-tile"></div>
+        <div class="lm-tile"></div>
+      </div>
     </div>
-    <div>
-      <div class="logo-text">Psyche</div>
-      <div class="logo-sub">AI Psychologist</div>
+    <div class="logo-copy">
+      <div class="logo-name">Psyche</div>
+      <div class="logo-tag">AI Psychologist</div>
     </div>
   </div>
 
-  <button class="new-chat-btn" id="newChatBtn">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <button class="new-btn" id="newChatBtn">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <path d="M12 5v14M5 12h14"/>
     </svg>
     New conversation
   </button>
 
-  <div class="sidebar-divider"></div>
+  <div class="divider"></div>
 
-  <div class="mbti-label">Your Personality</div>
-  <select class="mbti-select" id="mbtiSelect">
-    <option value="">Not specified</option>
-    <optgroup label="Analysts">
-      <option>INTJ</option><option>INTP</option><option>ENTJ</option><option>ENTP</option>
-    </optgroup>
-    <optgroup label="Diplomats">
-      <option>INFJ</option><option>INFP</option><option>ENFJ</option><option>ENFP</option>
-    </optgroup>
-    <optgroup label="Sentinels">
-      <option>ISTJ</option><option>ISFJ</option><option>ESTJ</option><option>ESFJ</option>
-    </optgroup>
-    <optgroup label="Explorers">
-      <option>ISTP</option><option>ISFP</option><option>ESTP</option><option>ESFP</option>
-    </optgroup>
-  </select>
+  <div class="sec-head">Personality type</div>
+  <div class="mbti-wrap">
+    <select class="mbti-select" id="mbtiSelect">
+      <option value="">Not specified</option>
+      <optgroup label="Analysts">
+        <option>INTJ</option><option>INTP</option><option>ENTJ</option><option>ENTP</option>
+      </optgroup>
+      <optgroup label="Diplomats">
+        <option>INFJ</option><option>INFP</option><option>ENFJ</option><option>ENFP</option>
+      </optgroup>
+      <optgroup label="Sentinels">
+        <option>ISTJ</option><option>ISFJ</option><option>ESTJ</option><option>ESFJ</option>
+      </optgroup>
+      <optgroup label="Explorers">
+        <option>ISTP</option><option>ISFP</option><option>ESTP</option><option>ESFP</option>
+      </optgroup>
+    </select>
+  </div>
 
-  <div class="stat-row">
-    <div class="stat-pill">
-      <span class="stat-key">
-        <span class="status-dot"></span>Model
-      </span>
-      <span class="stat-val">Llama 3.3 70B</span>
+  <div class="stats">
+    <div class="stat-card">
+      <span class="stat-k"><span class="pulse"></span>Status</span>
+      <span class="stat-v">Online</span>
     </div>
-    <div class="stat-pill">
-      <span class="stat-key">Knowledge base</span>
-      <span class="stat-val">6 papers</span>
+    <div class="stat-card">
+      <span class="stat-k">Model</span>
+      <span class="stat-v">Llama 3.3 70B</span>
     </div>
-    <div class="stat-pill" id="turnsPill">
-      <span class="stat-key">Turns</span>
-      <span class="stat-val" id="turnsVal">0</span>
+    <div class="stat-card">
+      <span class="stat-k">Knowledge</span>
+      <span class="stat-v">6 papers</span>
     </div>
+    <div class="stat-card">
+      <span class="stat-k">Turns</span>
+      <span class="stat-v" id="turnsVal">0</span>
+    </div>
+  </div>
+
+  <!-- Decorative mosaic strip -->
+  <div class="sidebar-mosaic">
+    <div class="sm-tile"></div><div class="sm-tile"></div><div class="sm-tile"></div>
+    <div class="sm-tile"></div><div class="sm-tile"></div><div class="sm-tile"></div>
+    <div class="sm-tile"></div><div class="sm-tile"></div><div class="sm-tile"></div>
+    <div class="sm-tile"></div>
   </div>
 </aside>
 
-<!-- Main -->
+<!-- ── Main ────────────────────────────────────────────────── -->
 <main class="main">
+  <!-- Top bar -->
   <div class="topbar">
-    <span class="topbar-title">Session</span>
-    <div class="topbar-badge">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M12 6v6l4 2"/>
-      </svg>
+    <div class="topbar-left">
+      <span class="topbar-title">Session</span>
+    </div>
+    <div class="tag-pill">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
       Evidence-based · Personality-aware
     </div>
   </div>
 
+  <!-- Messages -->
   <div class="messages" id="messages">
     <div class="welcome" id="welcome">
-      <div class="welcome-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
-          <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
-        </svg>
+      <!-- Mosaic hero icon -->
+      <div class="hero-mosaic">
+        <div class="hm-cell"></div><div class="hm-cell"></div>
+        <div class="hm-cell"></div><div class="hm-cell"></div>
+        <div class="hm-cell"></div><div class="hm-cell"></div>
+        <div class="hm-cell"></div><div class="hm-cell"></div>
+        <div class="hm-cell"></div><div class="hm-cell"></div>
+        <div class="hm-cell"></div><div class="hm-cell"></div>
+        <div class="hm-cell"></div><div class="hm-cell"></div>
+        <div class="hm-cell"></div><div class="hm-cell"></div>
       </div>
-      <h2>How can I support you today?</h2>
-      <p>I'm your evidence-based AI psychologist, drawing on research in behavior change, motivation, meaning-making, and personality psychology.</p>
-      <div class="welcome-starters">
-        <button class="starter-card" data-msg="I've been struggling with procrastination lately and can't seem to get started on important tasks.">
-          <strong>Procrastination</strong>
-          I can't seem to get started on important tasks.
+
+      <div class="welcome-head">
+        <h2>How can I support you today?</h2>
+        <p>Your evidence-based AI psychologist — drawing on research in behavior change, motivation, meaning-making, and all 16 MBTI personality types.</p>
+      </div>
+
+      <div class="starters">
+        <button class="starter" data-msg="I've been struggling with procrastination lately and can't seem to get started on important tasks.">
+          <div class="starter-label"><span class="starter-dot"></span>Procrastination</div>
+          <div class="starter-body">I can't seem to get started on the tasks that matter most.</div>
         </button>
-        <button class="starter-card" data-msg="I feel like I'm always busy but not making progress on things that actually matter to me.">
-          <strong>Essentialism</strong>
-          Busy but not making meaningful progress.
+        <button class="starter" data-msg="I feel like I'm always busy but not making progress on things that actually matter to me.">
+          <div class="starter-label"><span class="starter-dot"></span>Essentialism</div>
+          <div class="starter-body">Constantly busy but not making meaningful progress.</div>
         </button>
-        <button class="starter-card" data-msg="I want to build better habits but I keep falling back into old patterns.">
-          <strong>Habit change</strong>
-          Falling back into old patterns.
+        <button class="starter" data-msg="I want to build better habits but I keep falling back into old patterns.">
+          <div class="starter-label"><span class="starter-dot"></span>Habit change</div>
+          <div class="starter-body">Trying to build habits but keep reverting to old patterns.</div>
         </button>
-        <button class="starter-card" data-msg="I'm searching for more meaning and purpose in my daily life.">
-          <strong>Meaning & purpose</strong>
-          Searching for more meaning.
+        <button class="starter" data-msg="I'm searching for more meaning and purpose in my daily life.">
+          <div class="starter-label"><span class="starter-dot"></span>Meaning & purpose</div>
+          <div class="starter-body">Searching for deeper meaning in everyday life.</div>
         </button>
       </div>
     </div>
   </div>
 
+  <!-- Input -->
   <div class="input-area">
-    <div class="input-box">
+    <div class="input-shell">
       <textarea id="inputArea" placeholder="Share what's on your mind…" rows="1"></textarea>
       <button class="send-btn" id="sendBtn" aria-label="Send">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 19V5M5 12l7-7 7 7"/>
         </svg>
       </button>
     </div>
-    <div class="input-hint">Press <kbd style="font-family:inherit;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:1px 5px;font-size:10px">Enter</kbd> to send · <kbd style="font-family:inherit;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:1px 5px;font-size:10px">Shift+Enter</kbd> for new line</div>
+    <div class="input-hint">
+      Press <span class="kbd">Enter</span> to send &middot;
+      <span class="kbd">Shift+Enter</span> for new line
+    </div>
   </div>
 </main>
 
-<!-- Mosaic decorative corner -->
-<div class="mosaic-corner">
-  <div class="mosaic-tile"></div><div class="mosaic-tile"></div><div class="mosaic-tile"></div>
-  <div class="mosaic-tile"></div><div class="mosaic-tile"></div><div class="mosaic-tile"></div>
-  <div class="mosaic-tile"></div><div class="mosaic-tile"></div><div class="mosaic-tile"></div>
+<!-- Floating mosaic decoration -->
+<div class="deco-mosaic">
+  <div class="dm-tile"></div><div class="dm-tile"></div><div class="dm-tile"></div><div class="dm-tile"></div>
+  <div class="dm-tile"></div><div class="dm-tile"></div><div class="dm-tile"></div><div class="dm-tile"></div>
+  <div class="dm-tile"></div><div class="dm-tile"></div><div class="dm-tile"></div><div class="dm-tile"></div>
 </div>
 
 <script>
-  const API = '';  // same origin
+  const API = '';
   let sessionId = null;
   let turns = 0;
   let isStreaming = false;
@@ -684,37 +876,35 @@
   const welcomeEl  = document.getElementById('welcome');
   const inputEl    = document.getElementById('inputArea');
   const sendBtn    = document.getElementById('sendBtn');
-  const turnsVal   = document.getElementById('turnsVal');
+  const turnsValEl = document.getElementById('turnsVal');
   const mbtiSelect = document.getElementById('mbtiSelect');
 
-  // ── Session init ──────────────────────────────────────────
   async function initSession() {
-    const res = await fetch(`${API}/session`, { method: 'POST' });
-    const data = await res.json();
-    sessionId = data.session_id;
+    try {
+      const res = await fetch(`${API}/session`, { method: 'POST' });
+      const data = await res.json();
+      sessionId = data.session_id;
+    } catch {
+      sessionId = 'offline-' + Date.now();
+    }
   }
 
   initSession();
 
-  // ── Textarea auto-resize ──────────────────────────────────
+  // Auto-resize textarea
   inputEl.addEventListener('input', () => {
     inputEl.style.height = 'auto';
-    inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
-    sendBtn.classList.toggle('active', inputEl.value.trim().length > 0);
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 150) + 'px';
+    sendBtn.classList.toggle('ready', inputEl.value.trim().length > 0);
   });
 
-  // ── Enter key ─────────────────────────────────────────────
   inputEl.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
 
   sendBtn.addEventListener('click', sendMessage);
 
-  // ── Starter cards ─────────────────────────────────────────
-  document.querySelectorAll('.starter-card').forEach(card => {
+  document.querySelectorAll('.starter').forEach(card => {
     card.addEventListener('click', () => {
       inputEl.value = card.dataset.msg;
       inputEl.dispatchEvent(new Event('input'));
@@ -722,86 +912,82 @@
     });
   });
 
-  // ── New chat ───────────────────────────────────────────────
   document.getElementById('newChatBtn').addEventListener('click', async () => {
     if (sessionId) {
-      await fetch(`${API}/session/${sessionId}`, { method: 'DELETE' }).catch(() => {});
+      fetch(`${API}/session/${sessionId}`, { method: 'DELETE' }).catch(() => {});
     }
     await initSession();
     turns = 0;
-    turnsVal.textContent = '0';
+    turnsValEl.textContent = '0';
     messagesEl.innerHTML = '';
     messagesEl.appendChild(welcomeEl);
     welcomeEl.style.display = 'flex';
   });
 
-  // ── Helpers ───────────────────────────────────────────────
   function scrollBottom() {
     messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
   }
 
-  function formatTime() {
+  function fmtTime() {
     return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  function appendUserBubble(text) {
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  function appendUser(text) {
     const row = document.createElement('div');
     row.className = 'msg-row user';
-    row.innerHTML = `
-      <div class="msg-meta">${formatTime()}</div>
-      <div class="msg-bubble">${escHtml(text)}</div>`;
+    row.innerHTML = `<div class="msg-meta">${fmtTime()}</div>
+                     <div class="msg-bubble">${esc(text)}</div>`;
     messagesEl.appendChild(row);
     scrollBottom();
   }
 
-  function appendAIBubble() {
+  function appendAI() {
     const row = document.createElement('div');
     row.className = 'msg-row ai';
-    const bubble = document.createElement('div');
-    bubble.className = 'msg-bubble';
 
-    // Typing indicator
-    bubble.innerHTML = `<div class="typing-indicator">
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
-    </div>`;
-
-    row.innerHTML = `<div class="msg-meta">
-      <div class="msg-avatar">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-          <path d="M12 2a8 8 0 1 0 0 16A8 8 0 0 0 12 2Z"/>
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    meta.innerHTML = `
+      <div class="ai-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"/>
         </svg>
       </div>
-      Psyche · ${formatTime()}
-    </div>`;
+      Psyche &middot; ${fmtTime()}`;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.innerHTML = `<div class="typing"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>`;
+
+    row.appendChild(meta);
     row.appendChild(bubble);
     messagesEl.appendChild(row);
     scrollBottom();
     return bubble;
   }
 
-  function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-  }
-
-  // ── Send ──────────────────────────────────────────────────
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text || isStreaming || !sessionId) return;
+    if (!text || isStreaming) return;
 
-    // Hide welcome
     welcomeEl.style.display = 'none';
 
     const mbti = mbtiSelect.value;
     const payload = mbti ? `${text} (My MBTI type is ${mbti})` : text;
 
-    appendUserBubble(text);
-    const bubble = appendAIBubble();
+    appendUser(text);
+    const bubble = appendAI();
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
-    sendBtn.classList.remove('active');
+    sendBtn.classList.remove('ready');
     isStreaming = true;
 
     let accumulated = '';
@@ -816,48 +1002,51 @@
         body: JSON.stringify({ session_id: sessionId, message: payload }),
       });
 
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+
       const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+      const dec = new TextDecoder();
+      let buf = '';
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
 
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
-          const json = JSON.parse(line.slice(6));
+          let evt;
+          try { evt = JSON.parse(line.slice(6)); } catch { continue; }
 
-          if (json.error) {
-            bubble.innerHTML = `<span style="color:#f87171">${escHtml(json.error)}</span>`;
+          if (evt.error) {
+            bubble.innerHTML = `<span style="color:#dc2626">${esc(evt.error)}</span>`;
             break;
           }
 
-          if (!started && json.token !== '') {
+          if (!started && evt.token !== '') {
             bubble.innerHTML = '';
             started = true;
           }
 
-          if (json.token) {
-            accumulated += json.token;
-            bubble.innerHTML = escHtml(accumulated);
+          if (evt.token) {
+            accumulated += evt.token;
+            bubble.innerHTML = esc(accumulated);
             bubble.appendChild(cursor);
             scrollBottom();
           }
 
-          if (json.done) {
+          if (evt.done) {
             cursor.remove();
             turns++;
-            turnsVal.textContent = turns;
+            turnsValEl.textContent = turns;
           }
         }
       }
     } catch (err) {
-      bubble.innerHTML = `<span style="color:#f87171">Connection error — is the server running?</span>`;
+      bubble.innerHTML = `<span style="color:#dc2626">Connection error — is the server running?</span>`;
     } finally {
       cursor.remove();
       isStreaming = false;
