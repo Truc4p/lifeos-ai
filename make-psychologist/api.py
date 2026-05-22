@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel
 
@@ -156,3 +157,9 @@ async def text_to_speech(req: TTSRequest) -> StreamingResponse:
 def clear_session(session_id: str) -> dict:
     sessions.pop(session_id, None)
     return {"cleared": True}
+
+
+# Serve frontend — public/ for Railway/local, Vercel CDN handles it there instead
+_public_dir = Path(__file__).parent / "public"
+if _public_dir.exists():
+    app.mount("/", StaticFiles(directory=str(_public_dir), html=True), name="frontend")
