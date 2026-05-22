@@ -143,6 +143,7 @@ async def text_to_speech(req: TTSRequest) -> StreamingResponse:
         )
 
     if resp.status_code != 200:
+        print(f"[ElevenLabs] {resp.status_code}: {resp.text}")
         raise HTTPException(status_code=502, detail=f"ElevenLabs error {resp.status_code}: {resp.text}")
 
     audio_bytes = resp.content
