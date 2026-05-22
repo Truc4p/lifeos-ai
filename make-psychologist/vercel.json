@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "50mb" }
+    }
+  ],
+  "routes": [
+    { "src": "/session",          "dest": "api.py" },
+    { "src": "/session/([^/]+)", "dest": "api.py" },
+    { "src": "/chat/stream",     "dest": "api.py" },
+    { "src": "/tts",             "dest": "api.py" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)",            "dest": "/index.html" }
+  ]
+}

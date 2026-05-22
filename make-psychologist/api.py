@@ -3,8 +3,10 @@
 import asyncio
 import json
 import os
+import shutil
+import threading
 import uuid
-from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncIterator
 
 import httpx
@@ -12,7 +14,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel
 
@@ -24,21 +25,34 @@ load_dotenv()
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
 
-# In-memory session store: session_id -> chat_history list
 sessions: dict[str, list] = {}
-chain = None
+_chain = None
+_chain_lock = threading.Lock()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    global chain
-    vs = get_vectorstore()
-    retriever = get_retriever(vs)
-    chain = build_chain(retriever)
-    yield
+def _ensure_chroma_writable() -> None:
+    """Copy the bundled chroma_db to /tmp on Vercel (read-only deploy FS)."""
+    if not os.getenv("VERCEL"):
+        return
+    src = Path(__file__).parent / "chroma_db"
+    dst = Path("/tmp/chroma_db")
+    if not dst.exists() and src.exists():
+        shutil.copytree(str(src), str(dst))
 
 
-app = FastAPI(title="AI Psychologist", lifespan=lifespan)
+def get_chain():
+    global _chain
+    if _chain is None:
+        with _chain_lock:
+            if _chain is None:
+                _ensure_chroma_writable()
+                vs = get_vectorstore()
+                retriever = get_retriever(vs)
+                _chain = build_chain(retriever)
+    return _chain
+
+
+app = FastAPI(title="AI Psychologist")
 
 app.add_middleware(
     CORSMiddleware,
@@ -70,8 +84,7 @@ def create_session() -> SessionResponse:
 
 @app.post("/chat/stream")
 async def chat_stream(req: ChatRequest) -> StreamingResponse:
-    if chain is None:
-        raise HTTPException(status_code=503, detail="Chain not ready")
+    chain = get_chain()
 
     if req.session_id not in sessions:
         sessions[req.session_id] = []
@@ -86,7 +99,6 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
             )
             answer: str = result["answer"]
 
-            # Stream word by word for a natural feel
             words = answer.split(" ")
             for i, word in enumerate(words):
                 chunk = word if i == 0 else " " + word
@@ -130,7 +142,6 @@ async def text_to_speech(req: TTSRequest) -> StreamingResponse:
         )
 
     if resp.status_code != 200:
-        print(f"[ElevenLabs] HTTP {resp.status_code}: {resp.text}")
         raise HTTPException(status_code=502, detail=f"ElevenLabs error {resp.status_code}: {resp.text}")
 
     audio_bytes = resp.content
@@ -145,7 +156,3 @@ async def text_to_speech(req: TTSRequest) -> StreamingResponse:
 def clear_session(session_id: str) -> dict:
     sessions.pop(session_id, None)
     return {"cleared": True}
-
-
-# Serve frontend
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

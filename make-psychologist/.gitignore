@@ -1,5 +1,5 @@
 .env
-chroma_db/
+# chroma_db/ — committed so Vercel can deploy the pre-built vector store
 __pycache__/
 *.pyc
 .venv/

@@ -1,8 +1,11 @@
+import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
 RESEARCH_DIR = PROJECT_ROOT / "research-takeaways"
-CHROMA_DIR   = PROJECT_ROOT / "chroma_db"
+
+# Vercel's filesystem is read-only; we copy chroma_db to /tmp at startup.
+CHROMA_DIR = Path("/tmp/chroma_db") if os.getenv("VERCEL") else PROJECT_ROOT / "chroma_db"
 COLLECTION   = "psychologist_research"
 
 EMBED_MODEL  = "models/gemini-embedding-001"
