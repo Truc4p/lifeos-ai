@@ -704,6 +704,66 @@
     .dm-tile:nth-child(11) { opacity: 0.75; }
     .dm-tile:nth-child(12) { opacity: 0.10; }
 
+    /* ── Voice toggle button ─────────────────────────────── */
+    .voice-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      font-size: 12px;
+      font-family: var(--font);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.14s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .voice-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .voice-btn.active {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(90,79,207,0.35);
+    }
+
+    .voice-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ── Speaking wave on AI bubble ──────────────────────── */
+    .speaking-wave {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .wave-bar {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--accent);
+      animation: waveAnim 0.9s ease-in-out infinite;
+    }
+
+    .wave-bar:nth-child(1) { height: 6px;  animation-delay: 0s; }
+    .wave-bar:nth-child(2) { height: 12px; animation-delay: 0.15s; }
+    .wave-bar:nth-child(3) { height: 8px;  animation-delay: 0.3s; }
+    .wave-bar:nth-child(4) { height: 14px; animation-delay: 0.1s; }
+    .wave-bar:nth-child(5) { height: 6px;  animation-delay: 0.25s; }
+
+    @keyframes waveAnim {
+      0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
+      50%       { transform: scaleY(1);   opacity: 1; }
+    }
+
     /* ── Responsive ───────────────────────────────────────── */
     @media (max-width: 700px) {
       .sidebar { display: none; }
@@ -795,9 +855,19 @@
     <div class="topbar-left">
       <span class="topbar-title">Session</span>
     </div>
-    <div class="tag-pill">
-      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-      Evidence-based · Personality-aware
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="voice-btn" id="voiceBtn" title="Toggle AI voice">
+        <svg id="voiceIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        <span id="voiceBtnLabel">Voice off</span>
+      </button>
+      <div class="tag-pill">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+        Evidence-based · Personality-aware
+      </div>
     </div>
   </div>
 
@@ -871,6 +941,9 @@
   let sessionId = null;
   let turns = 0;
   let isStreaming = false;
+  let voiceEnabled = false;
+  let currentAudio = null;
+  let activeSpeakingBubble = null;
 
   const messagesEl = document.getElementById('messages');
   const welcomeEl  = document.getElementById('welcome');
@@ -878,6 +951,62 @@
   const sendBtn    = document.getElementById('sendBtn');
   const turnsValEl = document.getElementById('turnsVal');
   const mbtiSelect = document.getElementById('mbtiSelect');
+  const voiceBtn   = document.getElementById('voiceBtn');
+  const voiceBtnLabel = document.getElementById('voiceBtnLabel');
+  const voiceIcon  = document.getElementById('voiceIcon');
+
+  // Voice toggle
+  voiceBtn.addEventListener('click', () => {
+    voiceEnabled = !voiceEnabled;
+    voiceBtn.classList.toggle('active', voiceEnabled);
+    voiceBtnLabel.textContent = voiceEnabled ? 'Voice on' : 'Voice off';
+    if (!voiceEnabled) stopAudio();
+  });
+
+  function stopAudio() {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+    if (activeSpeakingBubble) {
+      const wave = activeSpeakingBubble.querySelector('.speaking-wave');
+      if (wave) wave.remove();
+      activeSpeakingBubble = null;
+    }
+  }
+
+  function showSpeakingWave(bubble) {
+    const wave = document.createElement('span');
+    wave.className = 'speaking-wave';
+    wave.innerHTML = '<span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>';
+    bubble.appendChild(wave);
+    activeSpeakingBubble = bubble;
+  }
+
+  async function speakText(text, bubble) {
+    if (!voiceEnabled) return;
+    stopAudio();
+    try {
+      const res = await fetch(`${API}/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAudio = audio;
+      showSpeakingWave(bubble);
+      audio.play();
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        stopAudio();
+      };
+    } catch {
+      // TTS failure is non-fatal — silently skip
+    }
+  }
 
   async function initSession() {
     try {
@@ -977,6 +1106,7 @@
     const text = inputEl.value.trim();
     if (!text || isStreaming) return;
 
+    stopAudio();
     welcomeEl.style.display = 'none';
 
     const mbti = mbtiSelect.value;
@@ -1042,6 +1172,7 @@
             cursor.remove();
             turns++;
             turnsValEl.textContent = turns;
+            speakText(accumulated, bubble);
           }
         }
       }

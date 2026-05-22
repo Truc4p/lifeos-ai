@@ -2,10 +2,12 @@
 """FastAPI server exposing the AI Psychologist chatbot with SSE streaming."""
 import asyncio
 import json
+import os
 import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +20,9 @@ from psychologist.chain import build_chain
 from psychologist.vectorstore import get_retriever, get_vectorstore
 
 load_dotenv()
+
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
 
 # In-memory session store: session_id -> chat_history list
 sessions: dict[str, list] = {}
@@ -50,6 +55,10 @@ class ChatRequest(BaseModel):
 
 class SessionResponse(BaseModel):
     session_id: str
+
+
+class TTSRequest(BaseModel):
+    text: str
 
 
 @app.post("/session", response_model=SessionResponse)
@@ -100,6 +109,34 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
         },
+    )
+
+
+@app.post("/tts")
+async def text_to_speech(req: TTSRequest) -> StreamingResponse:
+    if not ELEVENLABS_API_KEY:
+        raise HTTPException(status_code=503, detail="ElevenLabs API key not configured")
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(
+            url,
+            headers={"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"},
+            json={
+                "text": req.text,
+                "model_id": "eleven_turbo_v2_5",
+                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+            },
+        )
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"ElevenLabs error: {resp.text}")
+
+    audio_bytes = resp.content
+    return StreamingResponse(
+        iter([audio_bytes]),
+        media_type="audio/mpeg",
+        headers={"Content-Length": str(len(audio_bytes))},
     )
 
 
