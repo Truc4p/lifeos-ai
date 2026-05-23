@@ -127,24 +127,20 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
 
 @app.post("/tts")
 async def text_to_speech(req: TTSRequest) -> StreamingResponse:
-    if not ELEVENLABS_API_KEY:
-        raise HTTPException(status_code=503, detail="ElevenLabs API key not configured")
+    groq_api_key = os.getenv("GROQ_API_KEY", "")
+    if not groq_api_key:
+        raise HTTPException(status_code=503, detail="GROQ_API_KEY not configured")
 
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
-            url,
-            headers={"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"},
-            json={
-                "text": req.text,
-                "model_id": "eleven_multilingual_v2",
-                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
-            },
+            "https://api.groq.com/openai/v1/audio/speech",
+            headers={"Authorization": f"Bearer {groq_api_key}", "Content-Type": "application/json"},
+            json={"model": "playai-tts", "input": req.text, "voice": "Celeste-PlayAI", "response_format": "mp3"},
         )
 
     if resp.status_code != 200:
-        print(f"[ElevenLabs] {resp.status_code}: {resp.text}")
-        raise HTTPException(status_code=502, detail=f"ElevenLabs error {resp.status_code}: {resp.text}")
+        print(f"[Groq TTS] {resp.status_code}: {resp.text}")
+        raise HTTPException(status_code=502, detail=f"Groq TTS error {resp.status_code}")
 
     audio_bytes = resp.content
     return StreamingResponse(
