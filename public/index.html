@@ -964,10 +964,7 @@
   });
 
   function stopAudio() {
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio = null;
-    }
+    window.speechSynthesis.cancel();
     if (activeSpeakingBubble) {
       const wave = activeSpeakingBubble.querySelector('.speaking-wave');
       if (wave) wave.remove();
@@ -983,29 +980,21 @@
     activeSpeakingBubble = bubble;
   }
 
-  async function speakText(text, bubble) {
-    if (!voiceEnabled) return;
+  function speakText(text, bubble) {
+    if (!voiceEnabled || !window.speechSynthesis) return;
     stopAudio();
-    try {
-      const res = await fetch(`${API}/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) return;
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      currentAudio = audio;
-      showSpeakingWave(bubble);
-      audio.play();
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        stopAudio();
-      };
-    } catch {
-      // TTS failure is non-fatal — silently skip
-    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.lang.startsWith('en') && !v.localService)
+               || voices.find(v => v.lang.startsWith('en'))
+               || null;
+    if (voice) utterance.voice = voice;
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    showSpeakingWave(bubble);
+    utterance.onend = () => stopAudio();
+    utterance.onerror = () => stopAudio();
+    window.speechSynthesis.speak(utterance);
   }
 
   async function initSession() {
