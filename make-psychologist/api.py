@@ -160,7 +160,7 @@ def clear_session(session_id: str) -> dict:
     return {"cleared": True}
 
 
-# Serve frontend — public/ for Railway/local, Vercel CDN handles it there instead
-_public_dir = Path(__file__).parent / "public"
-if _public_dir.exists():
-    app.mount("/", StaticFiles(directory=str(_public_dir), html=True), name="frontend")
+# Serve frontend static files
+_frontend_dir = Path(__file__).parent / "frontend"
+if _frontend_dir.exists():
+    app.mount("/", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
