@@ -764,7 +764,58 @@
       50%       { transform: scaleY(1);   opacity: 1; }
     }
 
-    /* ── Responsive ───────────────────────────────────────── */
+    /* ── Chat history list ─────────────────────────────────── */
+    .chat-history {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow-y: auto;
+      max-height: 180px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .chat-history::-webkit-scrollbar { width: 3px; }
+    .chat-history::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .hist-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 7px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      text-align: left;
+      font-family: var(--font);
+      transition: background 0.13s;
+      width: 100%;
+    }
+
+    .hist-item:hover { background: var(--accent-dim); }
+
+    .hist-item.active {
+      background: var(--accent-dim);
+      border-left: 2px solid var(--accent);
+      padding-left: 10px;
+    }
+
+    .hist-preview {
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hist-item.active .hist-preview { color: var(--accent); font-weight: 500; }
+
+    .hist-date { font-size: 10px; color: var(--text-muted); }
+
+    .hist-empty { font-size: 11px; color: var(--text-muted); padding: 6px 12px; }
+
+        /* ── Responsive ───────────────────────────────────────── */
     @media (max-width: 700px) {
       .sidebar { display: none; }
       .topbar, .input-area { padding-left: 16px; padding-right: 16px; }
@@ -798,6 +849,13 @@
     </svg>
     New conversation
   </button>
+
+  <div class="divider"></div>
+
+  <div class="sec-head">Recent</div>
+  <div class="chat-history" id="chatHistory">
+    <div class="hist-empty">No saved chats yet</div>
+  </div>
 
   <div class="divider"></div>
 
@@ -967,7 +1025,111 @@
   const voiceBtnLabel = document.getElementById('voiceBtnLabel');
   const voiceIcon  = document.getElementById('voiceIcon');
 
-  // Voice toggle
+  // ── Persistence ────────────────────────────────────────────────
+  const LS_CURRENT = 'psyche_current';
+  const LS_HISTORY = 'psyche_history';
+
+  let chatMessages = []; // { role, text, time }
+  let activeHistoryId = null;
+
+  function loadCurrentFromLS() {
+    try { return JSON.parse(localStorage.getItem(LS_CURRENT) || 'null'); }
+    catch { return null; }
+  }
+
+  function loadHistoryFromLS() {
+    try { return JSON.parse(localStorage.getItem(LS_HISTORY) || '[]'); }
+    catch { return []; }
+  }
+
+  function saveCurrentToLS() {
+    if (chatMessages.length === 0) return;
+    const preview = (chatMessages.find(m => m.role === 'user')?.text || '').slice(0, 55);
+    localStorage.setItem(LS_CURRENT, JSON.stringify({
+      savedAt: new Date().toISOString(),
+      preview,
+      messages: chatMessages,
+    }));
+  }
+
+  function archiveCurrentToHistory() {
+    const current = loadCurrentFromLS();
+    if (!current || current.messages.length === 0) return;
+    const history = loadHistoryFromLS();
+    const id = 'chat-' + Date.now();
+    history.unshift({ id, ...current });
+    localStorage.setItem(LS_HISTORY, JSON.stringify(history.slice(0, 30)));
+    localStorage.removeItem(LS_CURRENT);
+  }
+
+  function renderHistory() {
+    const el = document.getElementById('chatHistory');
+    if (!el) return;
+    const current = loadCurrentFromLS();
+    const history = loadHistoryFromLS();
+    const items = [];
+    if (current && current.messages.length > 0) {
+      items.push({ id: '__current__', preview: current.preview, savedAt: current.savedAt, messages: current.messages });
+    }
+    items.push(...history);
+    if (items.length === 0) {
+      el.innerHTML = '<div class="hist-empty">No saved chats yet</div>';
+      return;
+    }
+    el.innerHTML = items.map(h => {
+      const active = h.id === activeHistoryId ? 'active' : '';
+      const date = new Date(h.savedAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return `<button class="hist-item ${active}" data-id="${h.id}">
+        <div class="hist-preview">${escHtml(h.preview || 'Conversation')}${(h.preview || '').length >= 55 ? '…' : ''}</div>
+        <div class="hist-date">${date}</div>
+      </button>`;
+    }).join('');
+    el.querySelectorAll('.hist-item').forEach(btn => {
+      btn.addEventListener('click', () => loadHistoryEntry(btn.dataset.id));
+    });
+  }
+
+  function loadHistoryEntry(id) {
+    let messages;
+    if (id === '__current__') {
+      const current = loadCurrentFromLS();
+      if (!current) return;
+      messages = current.messages;
+    } else {
+      const history = loadHistoryFromLS();
+      const entry = history.find(h => h.id === id);
+      if (!entry) return;
+      messages = entry.messages;
+    }
+
+    messagesEl.innerHTML = '';
+    welcomeEl.style.display = 'none';
+    messages.forEach(msg => {
+      if (msg.role === 'user') appendUserStatic(msg.text, msg.time);
+      else appendAIStatic(msg.text, msg.time);
+    });
+    chatMessages = [...messages];
+    turns = messages.filter(m => m.role === 'ai').length;
+    turnsValEl.textContent = turns;
+    activeHistoryId = id;
+    renderHistory();
+    scrollBottom();
+  }
+
+  function persistUserMessage(text, time) {
+    chatMessages.push({ role: 'user', text, time });
+    saveCurrentToLS();
+    activeHistoryId = '__current__';
+    renderHistory();
+  }
+
+  function persistAIMessage(text, time) {
+    chatMessages.push({ role: 'ai', text, time });
+    saveCurrentToLS();
+    renderHistory();
+  }
+
+  // ── Voice ───────────────────────────────────────────────────────
   voiceBtn.addEventListener('click', () => {
     voiceEnabled = !voiceEnabled;
     voiceBtn.classList.toggle('active', voiceEnabled);
@@ -1009,6 +1171,7 @@
     window.speechSynthesis.speak(utterance);
   }
 
+  // ── Session ─────────────────────────────────────────────────────
   async function initSession() {
     try {
       const res = await fetch(`${API}/session`, { method: 'POST' });
@@ -1018,8 +1181,6 @@
       sessionId = 'offline-' + Date.now();
     }
   }
-
-  initSession();
 
   // Auto-resize textarea
   inputEl.addEventListener('input', () => {
@@ -1043,6 +1204,11 @@
   });
 
   document.getElementById('newChatBtn').addEventListener('click', async () => {
+    // Archive current conversation before starting fresh
+    archiveCurrentToHistory();
+    chatMessages = [];
+    activeHistoryId = null;
+
     if (sessionId) {
       fetch(`${API}/session/${sessionId}`, { method: 'DELETE' }).catch(() => {});
     }
@@ -1052,6 +1218,7 @@
     messagesEl.innerHTML = '';
     messagesEl.appendChild(welcomeEl);
     welcomeEl.style.display = 'flex';
+    renderHistory();
   });
 
   function scrollBottom() {
@@ -1066,6 +1233,10 @@
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   }
 
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
   function appendUser(text) {
     const row = document.createElement('div');
     row.className = 'msg-row user';
@@ -1073,6 +1244,33 @@
                      <div class="msg-bubble">${esc(text)}</div>`;
     messagesEl.appendChild(row);
     scrollBottom();
+  }
+
+  function appendUserStatic(text, time) {
+    const row = document.createElement('div');
+    row.className = 'msg-row user';
+    row.innerHTML = `<div class="msg-meta">${time || ''}</div>
+                     <div class="msg-bubble">${esc(text)}</div>`;
+    messagesEl.appendChild(row);
+  }
+
+  function appendAIStatic(text, time) {
+    const row = document.createElement('div');
+    row.className = 'msg-row ai';
+    row.innerHTML = `
+      <div class="msg-meta">
+        <div class="ai-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+          </svg>
+        </div>
+        Psyche &middot; ${time || ''}
+      </div>
+      <div class="msg-bubble">${esc(text)}</div>`;
+    messagesEl.appendChild(row);
   }
 
   function appendAI() {
@@ -1112,9 +1310,13 @@
 
     const mbti = mbtiSelect.value;
     const payload = mbti ? `${text} (My MBTI type is ${mbti})` : text;
+    const msgTime = fmtTime();
 
     appendUser(text);
+    persistUserMessage(text, msgTime);
+
     const bubble = appendAI();
+    const aiTime = fmtTime();
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
@@ -1173,6 +1375,7 @@
             cursor.remove();
             turns++;
             turnsValEl.textContent = turns;
+            persistAIMessage(accumulated, aiTime);
             speakText(accumulated, bubble);
           }
         }
@@ -1184,6 +1387,25 @@
       isStreaming = false;
     }
   }
+
+  // ── Init: restore last conversation ────────────────────────────
+  (async () => {
+    const current = loadCurrentFromLS();
+    if (current && current.messages.length > 0) {
+      welcomeEl.style.display = 'none';
+      current.messages.forEach(msg => {
+        if (msg.role === 'user') appendUserStatic(msg.text, msg.time);
+        else appendAIStatic(msg.text, msg.time);
+      });
+      chatMessages = [...current.messages];
+      turns = chatMessages.filter(m => m.role === 'ai').length;
+      turnsValEl.textContent = turns;
+      activeHistoryId = '__current__';
+      scrollBottom();
+    }
+    renderHistory();
+    await initSession();
+  })();
 </script>
 </body>
 </html>
