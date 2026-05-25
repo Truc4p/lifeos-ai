@@ -815,9 +815,55 @@
 
     .hist-empty { font-size: 11px; color: var(--text-muted); padding: 6px 12px; }
 
-        /* ── Responsive ───────────────────────────────────────── */
+        /* ── Mobile menu button ──────────────────────────────── */
+    .menu-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      cursor: pointer;
+      color: var(--text-dim);
+      flex-shrink: 0;
+      transition: all 0.14s;
+    }
+
+    .menu-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    .menu-btn svg { width: 16px; height: 16px; }
+
+    /* ── Sidebar overlay (mobile) ────────────────────────── */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(13,12,26,0.35);
+      z-index: 99;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+
+    .sidebar-overlay.open { display: block; }
+
+    /* ── Responsive ───────────────────────────────────────── */
     @media (max-width: 700px) {
-      .sidebar { display: none; }
+      .menu-btn { display: flex; }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+        width: 288px;
+      }
+
+      .sidebar.open { transform: translateX(0); }
+
       .topbar, .input-area { padding-left: 16px; padding-right: 16px; }
       .msg-row { padding: 6px 16px; }
       .starters { grid-template-columns: 1fr; }
@@ -826,8 +872,11 @@
 </head>
 <body>
 
+<!-- Mobile sidebar overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- ── Sidebar ─────────────────────────────────────────────── -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
   <div class="logo">
     <div class="logo-mark">
       <div class="logo-mark-grid">
@@ -923,6 +972,11 @@
   <!-- Top bar -->
   <div class="topbar">
     <div class="topbar-left">
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M3 6h18M3 12h18M3 18h18"/>
+        </svg>
+      </button>
       <span class="topbar-title">Session</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
@@ -1024,6 +1078,22 @@
   const voiceBtn   = document.getElementById('voiceBtn');
   const voiceBtnLabel = document.getElementById('voiceBtnLabel');
   const voiceIcon  = document.getElementById('voiceIcon');
+  const sidebar    = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const menuBtn    = document.getElementById('menuBtn');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    sidebarOverlay.classList.add('open');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('open');
+  }
+
+  menuBtn.addEventListener('click', openSidebar);
+  sidebarOverlay.addEventListener('click', closeSidebar);
 
   // ── Persistence ────────────────────────────────────────────────
   const LS_CURRENT = 'psyche_current';
@@ -1085,7 +1155,10 @@
       </button>`;
     }).join('');
     el.querySelectorAll('.hist-item').forEach(btn => {
-      btn.addEventListener('click', () => loadHistoryEntry(btn.dataset.id));
+      btn.addEventListener('click', () => {
+        loadHistoryEntry(btn.dataset.id);
+        closeSidebar();
+      });
     });
   }
 
@@ -1204,6 +1277,7 @@
   });
 
   document.getElementById('newChatBtn').addEventListener('click', async () => {
+    closeSidebar();
     // Archive current conversation before starting fresh
     archiveCurrentToHistory();
     chatMessages = [];
