@@ -1,7 +1,7 @@
 import os
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains import create_retrieval_chain
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 from .config import LLM_PROVIDER, LLM_MODEL, OPENROUTER_MODEL, OPENROUTER_BASE_URL
 from .prompts import SYSTEM_PROMPT
 
@@ -21,6 +21,20 @@ def _build_llm(model: str | None = None):
     return ChatGroq(model=model or LLM_MODEL, temperature=0.7)
 
 
+def _format_docs(docs) -> str:
+    return "\n\n".join(doc.page_content for doc in docs)
+
+
+class _AnswerDict:
+    """Wraps the LCEL chain to return {"answer": ...} matching the api.py interface."""
+    def __init__(self, chain):
+        self._chain = chain
+
+    def invoke(self, inputs: dict) -> dict:
+        answer = self._chain.invoke(inputs)
+        return {"answer": answer}
+
+
 def build_chain(retriever, model: str | None = None):
     llm = _build_llm(model)
     prompt = ChatPromptTemplate.from_messages([
@@ -28,5 +42,12 @@ def build_chain(retriever, model: str | None = None):
         MessagesPlaceholder("chat_history"),
         ("human", "{input}"),
     ])
-    combine_chain = create_stuff_documents_chain(llm, prompt)
-    return create_retrieval_chain(retriever, combine_chain)
+    chain = (
+        RunnablePassthrough.assign(
+            context=lambda x: _format_docs(retriever.invoke(x["input"]))
+        )
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+    return _AnswerDict(chain)
