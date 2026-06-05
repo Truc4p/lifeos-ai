@@ -11,14 +11,18 @@ def _build_llm(model: str | None = None):
     use_openrouter = LLM_PROVIDER == "openrouter" or (model and "/" in model)
     if use_openrouter:
         from langchain_openai import ChatOpenAI
+        resolved = model or OPENROUTER_MODEL
+        print(f"[LLM] provider=openrouter model={resolved}", flush=True)
         return ChatOpenAI(
-            model=model or OPENROUTER_MODEL,
+            model=resolved,
             openai_api_key=os.getenv("OPENROUTER_API_KEY"),
             openai_api_base=OPENROUTER_BASE_URL,
             temperature=0.7,
         )
     from langchain_groq import ChatGroq
-    return ChatGroq(model=model or LLM_MODEL, temperature=0.7)
+    resolved = model or LLM_MODEL
+    print(f"[LLM] provider=groq model={resolved}", flush=True)
+    return ChatGroq(model=resolved, temperature=0.7)
 
 
 def _format_docs(docs) -> str:
