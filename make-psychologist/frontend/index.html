@@ -932,6 +932,23 @@
 
   <div class="divider"></div>
 
+  <div class="sec-head">AI Model</div>
+  <div class="mbti-wrap">
+    <select class="mbti-select" id="modelSelect">
+      <optgroup label="OpenRouter · Free">
+        <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B</option>
+        <option value="google/gemma-3-27b-it:free">Gemma 3 27B</option>
+        <option value="google/gemma-3-12b-it:free">Gemma 3 12B</option>
+        <option value="qwen/qwen3-14b:free">Qwen 3 14B</option>
+        <option value="deepseek/deepseek-r1-0528:free">DeepSeek R1</option>
+        <option value="microsoft/phi-4-reasoning:free">Phi-4 Reasoning</option>
+        <option value="mistralai/mistral-7b-instruct:free">Mistral 7B</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div class="divider"></div>
+
   <div class="sec-head">Personality type</div>
   <div class="mbti-wrap">
     <select class="mbti-select" id="mbtiSelect">
@@ -970,7 +987,7 @@
     </div>
     <div class="stat-card">
       <span class="stat-k">Model</span>
-      <span class="stat-v">Llama 3.3 70B</span>
+      <span class="stat-v" id="modelStatVal">Llama 3.3 70B</span>
     </div>
     <div class="stat-card">
       <span class="stat-k">Knowledge</span>
@@ -1093,18 +1110,42 @@
   let currentAudio = null;
   let activeSpeakingBubble = null;
 
-  const messagesEl = document.getElementById('messages');
-  const welcomeEl  = document.getElementById('welcome');
-  const inputEl    = document.getElementById('inputArea');
-  const sendBtn    = document.getElementById('sendBtn');
-  const turnsValEl = document.getElementById('turnsVal');
-  const mbtiSelect = document.getElementById('mbtiSelect');
-  const voiceBtn   = document.getElementById('voiceBtn');
+  const messagesEl    = document.getElementById('messages');
+  const welcomeEl     = document.getElementById('welcome');
+  const inputEl       = document.getElementById('inputArea');
+  const sendBtn       = document.getElementById('sendBtn');
+  const turnsValEl    = document.getElementById('turnsVal');
+  const mbtiSelect    = document.getElementById('mbtiSelect');
+  const modelSelect   = document.getElementById('modelSelect');
+  const modelStatVal  = document.getElementById('modelStatVal');
+  const voiceBtn      = document.getElementById('voiceBtn');
   const voiceBtnLabel = document.getElementById('voiceBtnLabel');
-  const voiceIcon  = document.getElementById('voiceIcon');
-  const sidebar    = document.getElementById('sidebar');
+  const voiceIcon     = document.getElementById('voiceIcon');
+  const sidebar       = document.getElementById('sidebar');
   const sidebarOverlay = document.getElementById('sidebarOverlay');
-  const menuBtn    = document.getElementById('menuBtn');
+  const menuBtn       = document.getElementById('menuBtn');
+
+  const MODEL_LABELS = {
+    'meta-llama/llama-3.3-70b-instruct:free': 'Llama 3.3 70B',
+    'google/gemma-3-27b-it:free':             'Gemma 3 27B',
+    'google/gemma-3-12b-it:free':             'Gemma 3 12B',
+    'qwen/qwen3-14b:free':                    'Qwen 3 14B',
+    'deepseek/deepseek-r1-0528:free':         'DeepSeek R1',
+    'microsoft/phi-4-reasoning:free':         'Phi-4 Reasoning',
+    'mistralai/mistral-7b-instruct:free':     'Mistral 7B',
+  };
+
+  // Restore saved model preference
+  const savedModel = localStorage.getItem('psyche_model');
+  if (savedModel && modelSelect.querySelector(`option[value="${savedModel}"]`)) {
+    modelSelect.value = savedModel;
+  }
+  modelStatVal.textContent = MODEL_LABELS[modelSelect.value] || modelSelect.value.split('/').pop();
+
+  modelSelect.addEventListener('change', () => {
+    localStorage.setItem('psyche_model', modelSelect.value);
+    modelStatVal.textContent = MODEL_LABELS[modelSelect.value] || modelSelect.value.split('/').pop();
+  });
 
   function openSidebar() {
     sidebar.classList.add('open');
@@ -1434,7 +1475,7 @@
       const res = await fetch(`${API}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, message: payload }),
+        body: JSON.stringify({ session_id: sessionId, message: payload, model: modelSelect.value }),
       });
 
       if (!res.ok) throw new Error(`Server error ${res.status}`);

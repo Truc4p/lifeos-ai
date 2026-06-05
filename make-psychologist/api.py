@@ -27,8 +27,10 @@ ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
 
 sessions: dict[str, list] = {}
-_chain = None
-_chain_lock = threading.Lock()
+_retriever = None
+_retriever_lock = threading.Lock()
+_chains: dict[str, object] = {}
+_chains_lock = threading.Lock()
 
 
 def _ensure_chroma_writable() -> None:
@@ -41,16 +43,24 @@ def _ensure_chroma_writable() -> None:
         shutil.copytree(str(src), str(dst))
 
 
-def get_chain():
-    global _chain
-    if _chain is None:
-        with _chain_lock:
-            if _chain is None:
+def _get_retriever():
+    global _retriever
+    if _retriever is None:
+        with _retriever_lock:
+            if _retriever is None:
                 _ensure_chroma_writable()
                 vs = get_vectorstore()
-                retriever = get_retriever(vs)
-                _chain = build_chain(retriever)
-    return _chain
+                _retriever = get_retriever(vs)
+    return _retriever
+
+
+def get_chain(model: str | None = None):
+    key = model or "__default__"
+    if key not in _chains:
+        with _chains_lock:
+            if key not in _chains:
+                _chains[key] = build_chain(_get_retriever(), model)
+    return _chains[key]
 
 
 app = FastAPI(title="AI Psychologist")
@@ -66,6 +76,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     session_id: str
     message: str
+    model: str | None = None
 
 
 class SessionResponse(BaseModel):
@@ -85,7 +96,7 @@ def create_session() -> SessionResponse:
 
 @app.post("/chat/stream")
 async def chat_stream(req: ChatRequest) -> StreamingResponse:
-    chain = get_chain()
+    chain = get_chain(req.model)
 
     if req.session_id not in sessions:
         sessions[req.session_id] = []
