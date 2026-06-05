@@ -936,13 +936,12 @@
   <div class="mbti-wrap">
     <select class="mbti-select" id="modelSelect">
       <optgroup label="OpenRouter · Free">
-        <option value="qwen/qwen3-14b:free" selected>Qwen 3 14B</option>
+        <option value="openai/gpt-oss-120b:free" selected>GPT OSS 120B</option>
         <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B</option>
-        <option value="google/gemma-3-27b-it:free">Gemma 3 27B</option>
-        <option value="google/gemma-3-12b-it:free">Gemma 3 12B</option>
-        <option value="deepseek/deepseek-r1:free">DeepSeek R1</option>
-        <option value="microsoft/phi-4-reasoning:free">Phi-4 Reasoning</option>
-        <option value="mistralai/mistral-7b-instruct:free">Mistral 7B</option>
+        <option value="google/gemma-4-31b-it:free">Gemma 4 31B</option>
+        <option value="nvidia/nemotron-3-super-120b-a12b:free">Nemotron 120B</option>
+        <option value="moonshotai/kimi-k2.6:free">Kimi K2.6</option>
+        <option value="nousresearch/hermes-3-llama-3.1-405b:free">Hermes 405B</option>
       </optgroup>
     </select>
   </div>
@@ -1126,13 +1125,12 @@
   const menuBtn       = document.getElementById('menuBtn');
 
   const MODEL_LABELS = {
-    'meta-llama/llama-3.3-70b-instruct:free': 'Llama 3.3 70B',
-    'google/gemma-3-27b-it:free':             'Gemma 3 27B',
-    'google/gemma-3-12b-it:free':             'Gemma 3 12B',
-    'qwen/qwen3-14b:free':                    'Qwen 3 14B',
-    'deepseek/deepseek-r1:free':              'DeepSeek R1',
-    'microsoft/phi-4-reasoning:free':         'Phi-4 Reasoning',
-    'mistralai/mistral-7b-instruct:free':     'Mistral 7B',
+    'openai/gpt-oss-120b:free':                     'GPT OSS 120B',
+    'meta-llama/llama-3.3-70b-instruct:free':        'Llama 3.3 70B',
+    'google/gemma-4-31b-it:free':                    'Gemma 4 31B',
+    'nvidia/nemotron-3-super-120b-a12b:free':        'Nemotron 120B',
+    'moonshotai/kimi-k2.6:free':                     'Kimi K2.6',
+    'nousresearch/hermes-3-llama-3.1-405b:free':     'Hermes 405B',
   };
 
   // Restore saved model preference
