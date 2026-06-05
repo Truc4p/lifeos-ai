@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     /* ── Reset ────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -545,6 +546,29 @@
       border-bottom-left-radius: 5px;
       box-shadow: var(--shadow-md);
     }
+
+    /* ── Markdown rendering inside AI bubbles ────────────────── */
+    .ai .msg-bubble p { margin: 0 0 0.65em; }
+    .ai .msg-bubble p:last-child { margin-bottom: 0; }
+    .ai .msg-bubble strong { font-weight: 600; color: var(--text); }
+    .ai .msg-bubble em { font-style: italic; }
+    .ai .msg-bubble ul, .ai .msg-bubble ol { margin: 0.4em 0 0.65em 1.25em; }
+    .ai .msg-bubble li { margin-bottom: 0.25em; }
+    .ai .msg-bubble h1, .ai .msg-bubble h2, .ai .msg-bubble h3 {
+      font-weight: 600; margin: 0.75em 0 0.35em; letter-spacing: -0.02em;
+    }
+    .ai .msg-bubble h1 { font-size: 1.05em; }
+    .ai .msg-bubble h2 { font-size: 1em; }
+    .ai .msg-bubble h3 { font-size: 0.95em; }
+    .ai .msg-bubble code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.88em;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    .ai .msg-bubble hr { border: none; border-top: 1px solid var(--border); margin: 0.75em 0; }
 
     /* Typing dots */
     .typing {
@@ -1311,6 +1335,10 @@
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  function renderMarkdown(text) {
+    return marked.parse(text, { breaks: true });
+  }
+
   function appendUser(text) {
     const row = document.createElement('div');
     row.className = 'msg-row user';
@@ -1343,7 +1371,7 @@
         </div>
         Psyche &middot; ${time || ''}
       </div>
-      <div class="msg-bubble">${esc(text)}</div>`;
+      <div class="msg-bubble">${renderMarkdown(text)}</div>`;
     messagesEl.appendChild(row);
   }
 
@@ -1440,7 +1468,7 @@
 
           if (evt.token) {
             accumulated += evt.token;
-            bubble.innerHTML = esc(accumulated);
+            bubble.innerHTML = renderMarkdown(accumulated);
             bubble.appendChild(cursor);
             scrollBottom();
           }

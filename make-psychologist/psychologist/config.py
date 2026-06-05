@@ -8,9 +8,12 @@ RESEARCH_DIR = PROJECT_ROOT / "research-takeaways"
 CHROMA_DIR = Path("/tmp/chroma_db") if os.getenv("VERCEL") else PROJECT_ROOT / "chroma_db"
 COLLECTION   = "psychologist_research"
 
-EMBED_MODEL  = "models/gemini-embedding-001"
-LLM_MODEL    = "llama-3.3-70b-versatile"
-RETRIEVAL_K  = 6
+EMBED_MODEL        = "models/gemini-embedding-001"
+LLM_PROVIDER       = os.getenv("LLM_PROVIDER", "groq")          # "groq" | "openrouter"
+LLM_MODEL          = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+OPENROUTER_MODEL   = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+RETRIEVAL_K        = 6
 
 TOPIC_MAP = {
     "Strategic Automaticity_ The Power of If-Then Planning":
