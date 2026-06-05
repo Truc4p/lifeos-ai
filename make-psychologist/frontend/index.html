@@ -936,10 +936,10 @@
   <div class="mbti-wrap">
     <select class="mbti-select" id="modelSelect">
       <optgroup label="OpenRouter · Free">
+        <option value="qwen/qwen3-14b:free" selected>Qwen 3 14B</option>
         <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B</option>
         <option value="google/gemma-3-27b-it:free">Gemma 3 27B</option>
         <option value="google/gemma-3-12b-it:free">Gemma 3 12B</option>
-        <option value="qwen/qwen3-14b:free">Qwen 3 14B</option>
         <option value="deepseek/deepseek-r1:free">DeepSeek R1</option>
         <option value="microsoft/phi-4-reasoning:free">Phi-4 Reasoning</option>
         <option value="mistralai/mistral-7b-instruct:free">Mistral 7B</option>
@@ -1498,7 +1498,11 @@
           try { evt = JSON.parse(line.slice(6)); } catch { continue; }
 
           if (evt.error) {
-            bubble.innerHTML = `<span style="color:#dc2626">${esc(evt.error)}</span>`;
+            const isRateLimit = evt.error.includes('429') || evt.error.toLowerCase().includes('rate-limit') || evt.error.toLowerCase().includes('rate_limit');
+            const msg = isRateLimit
+              ? 'This model is currently rate-limited. Please select a different model and try again.'
+              : esc(evt.error);
+            bubble.innerHTML = `<span style="color:#dc2626">${msg}</span>`;
             break;
           }
 
