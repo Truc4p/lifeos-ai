@@ -142,16 +142,19 @@ async def text_to_speech(req: TTSRequest) -> StreamingResponse:
         raise HTTPException(status_code=503, detail="ElevenLabs API key not configured")
 
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.post(
-            url,
-            headers={"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"},
-            json={
-                "text": req.text,
-                "model_id": "eleven_multilingual_v2",
-                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
-            },
-        )
+    try:
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            resp = await client.post(
+                url,
+                headers={"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"},
+                json={
+                    "text": req.text,
+                    "model_id": "eleven_multilingual_v2",
+                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+                },
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="ElevenLabs request timed out")
 
     if resp.status_code != 200:
         print(f"[ElevenLabs] {resp.status_code}: {resp.text}")
