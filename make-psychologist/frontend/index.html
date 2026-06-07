@@ -1111,7 +1111,9 @@
 </div>
 
 <script>
-  const API = 'https://lifeos-ai-wsv9.onrender.com';
+  const API = (location.hostname === '127.0.0.1' || location.hostname === 'localhost')
+    ? 'http://127.0.0.1:8000'
+    : 'https://lifeos-ai-wsv9.onrender.com';
   let sessionId = null;
   let turns = 0;
   let isStreaming = false;
