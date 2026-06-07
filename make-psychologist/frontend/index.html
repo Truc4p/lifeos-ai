@@ -948,6 +948,16 @@
 
   <div class="divider"></div>
 
+  <div class="sec-head">Voice engine</div>
+  <div class="mbti-wrap">
+    <select class="mbti-select" id="voiceEngineSelect">
+      <option value="browser">Browser</option>
+      <option value="elevenlabs">ElevenLabs</option>
+    </select>
+  </div>
+
+  <div class="divider"></div>
+
   <div class="sec-head">Personality type</div>
   <div class="mbti-wrap">
     <select class="mbti-select" id="mbtiSelect">
@@ -1117,6 +1127,7 @@
   const mbtiSelect    = document.getElementById('mbtiSelect');
   const modelSelect   = document.getElementById('modelSelect');
   const modelStatVal  = document.getElementById('modelStatVal');
+  const voiceEngineSelect = document.getElementById('voiceEngineSelect');
   const voiceBtn      = document.getElementById('voiceBtn');
   const voiceBtnLabel = document.getElementById('voiceBtnLabel');
   const voiceIcon     = document.getElementById('voiceIcon');
@@ -1143,6 +1154,16 @@
   modelSelect.addEventListener('change', () => {
     localStorage.setItem('psyche_model', modelSelect.value);
     modelStatVal.textContent = MODEL_LABELS[modelSelect.value] || modelSelect.value.split('/').pop();
+  });
+
+  // Restore saved voice engine preference
+  const savedVoiceEngine = localStorage.getItem('psyche_voice_engine');
+  if (savedVoiceEngine && voiceEngineSelect.querySelector(`option[value="${savedVoiceEngine}"]`)) {
+    voiceEngineSelect.value = savedVoiceEngine;
+  }
+  voiceEngineSelect.addEventListener('change', () => {
+    localStorage.setItem('psyche_voice_engine', voiceEngineSelect.value);
+    stopAudio();
   });
 
   function openSidebar() {
@@ -1275,6 +1296,11 @@
 
   function stopAudio() {
     window.speechSynthesis.cancel();
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.removeAttribute('src');
+      currentAudio = null;
+    }
     if (activeSpeakingBubble) {
       const wave = activeSpeakingBubble.querySelector('.speaking-wave');
       if (wave) wave.remove();
@@ -1291,8 +1317,17 @@
   }
 
   function speakText(text, bubble) {
-    if (!voiceEnabled || !window.speechSynthesis) return;
+    if (!voiceEnabled) return;
     stopAudio();
+    if (voiceEngineSelect.value === 'elevenlabs') {
+      speakWithElevenLabs(text, bubble);
+    } else {
+      speakWithBrowser(text, bubble);
+    }
+  }
+
+  function speakWithBrowser(text, bubble) {
+    if (!window.speechSynthesis) return;
     const utterance = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
     const voice = voices.find(v => v.lang.startsWith('en') && !v.localService)
@@ -1305,6 +1340,30 @@
     utterance.onend = () => stopAudio();
     utterance.onerror = () => stopAudio();
     window.speechSynthesis.speak(utterance);
+  }
+
+  async function speakWithElevenLabs(text, bubble) {
+    showSpeakingWave(bubble);
+    let url;
+    try {
+      const res = await fetch(`${API}/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error(`TTS request failed: ${res.status}`);
+      const blob = await res.blob();
+      url = URL.createObjectURL(blob);
+      currentAudio = new Audio(url);
+      currentAudio.onended = () => { URL.revokeObjectURL(url); stopAudio(); };
+      currentAudio.onerror = () => { URL.revokeObjectURL(url); stopAudio(); };
+      await currentAudio.play();
+    } catch (err) {
+      console.error('[ElevenLabs TTS] falling back to browser voice:', err);
+      if (url) URL.revokeObjectURL(url);
+      stopAudio();
+      speakWithBrowser(text, bubble);
+    }
   }
 
   // ── Session ─────────────────────────────────────────────────────
