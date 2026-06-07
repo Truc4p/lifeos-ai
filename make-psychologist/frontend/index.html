@@ -1296,7 +1296,13 @@
     if (!voiceEnabled) stopAudio();
   });
 
+  let speechGen = 0;
+  let sentenceQueue = [];
+  let queueRunning = false;
+
   function stopAudio() {
+    speechGen++;            // invalidate anything still in flight
+    sentenceQueue = [];
     window.speechSynthesis.cancel();
     if (currentAudio) {
       currentAudio.pause();
@@ -1311,6 +1317,11 @@
   }
 
   function showSpeakingWave(bubble) {
+    if (activeSpeakingBubble === bubble) return;
+    if (activeSpeakingBubble) {
+      const old = activeSpeakingBubble.querySelector('.speaking-wave');
+      if (old) old.remove();
+    }
     const wave = document.createElement('span');
     wave.className = 'speaking-wave';
     wave.innerHTML = '<span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>';
@@ -1318,34 +1329,74 @@
     activeSpeakingBubble = bubble;
   }
 
-  function speakText(text, bubble) {
+  // Splits newly-arrived text into complete sentences so each one can be sent
+  // to the voice engine as soon as it's ready, instead of waiting for the
+  // whole reply to finish streaming. Returns the sentences found plus the
+  // index up to which the text has been consumed (the rest is an
+  // in-progress sentence, left for the next call).
+  function extractSentences(text, fromIndex) {
+    const unspoken = text.slice(fromIndex);
+    const matches = [...unspoken.matchAll(/[^.!?\n]+[.!?\n]+(?:\s+|$)/g)];
+    if (matches.length === 0) return { sentences: [], newIndex: fromIndex };
+    let consumed = 0;
+    const sentences = [];
+    for (const m of matches) {
+      sentences.push(m[0].trim());
+      consumed += m[0].length;
+    }
+    return { sentences, newIndex: fromIndex + consumed };
+  }
+
+  function enqueueSpeech(text, bubble) {
     if (!voiceEnabled) return;
-    stopAudio();
-    if (voiceEngineSelect.value === 'elevenlabs') {
-      speakWithElevenLabs(text, bubble);
-    } else {
-      speakWithBrowser(text, bubble);
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    sentenceQueue.push({ text: trimmed, bubble, gen: speechGen });
+    runSpeechQueue();
+  }
+
+  async function runSpeechQueue() {
+    if (queueRunning) return;
+    queueRunning = true;
+    while (sentenceQueue.length > 0) {
+      const item = sentenceQueue.shift();
+      if (item.gen !== speechGen || !voiceEnabled) continue;
+      showSpeakingWave(item.bubble);
+      await speakChunk(item.text, item.gen);
+    }
+    queueRunning = false;
+    if (activeSpeakingBubble) {
+      const wave = activeSpeakingBubble.querySelector('.speaking-wave');
+      if (wave) wave.remove();
+      activeSpeakingBubble = null;
     }
   }
 
-  function speakWithBrowser(text, bubble) {
-    if (!window.speechSynthesis) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.lang.startsWith('en') && !v.localService)
-               || voices.find(v => v.lang.startsWith('en'))
-               || null;
-    if (voice) utterance.voice = voice;
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-    showSpeakingWave(bubble);
-    utterance.onend = () => stopAudio();
-    utterance.onerror = () => stopAudio();
-    window.speechSynthesis.speak(utterance);
+  function speakChunk(text, gen) {
+    if (gen !== speechGen || !voiceEnabled) return Promise.resolve();
+    return voiceEngineSelect.value === 'elevenlabs'
+      ? speakChunkElevenLabs(text, gen)
+      : speakChunkBrowser(text, gen);
   }
 
-  async function speakWithElevenLabs(text, bubble) {
-    showSpeakingWave(bubble);
+  function speakChunkBrowser(text, gen) {
+    return new Promise(resolve => {
+      if (!window.speechSynthesis || gen !== speechGen) return resolve();
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang.startsWith('en') && !v.localService)
+                 || voices.find(v => v.lang.startsWith('en'))
+                 || null;
+      if (voice) utterance.voice = voice;
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      utterance.onend = resolve;
+      utterance.onerror = resolve;
+      window.speechSynthesis.speak(utterance);
+    });
+  }
+
+  async function speakChunkElevenLabs(text, gen) {
     let url;
     try {
       const res = await fetch(`${API}/tts`, {
@@ -1353,18 +1404,23 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
+      if (gen !== speechGen) return;
       if (!res.ok) throw new Error(`TTS request failed: ${res.status}`);
       const blob = await res.blob();
+      if (gen !== speechGen) return;
       url = URL.createObjectURL(blob);
       currentAudio = new Audio(url);
-      currentAudio.onended = () => { URL.revokeObjectURL(url); stopAudio(); };
-      currentAudio.onerror = () => { URL.revokeObjectURL(url); stopAudio(); };
-      await currentAudio.play();
+      await new Promise(resolve => {
+        currentAudio.onended = resolve;
+        currentAudio.onerror = resolve;
+        currentAudio.play().catch(resolve);
+      });
     } catch (err) {
       console.error('[ElevenLabs TTS] falling back to browser voice:', err);
+      if (gen === speechGen) await speakChunkBrowser(text, gen);
+    } finally {
       if (url) URL.revokeObjectURL(url);
-      stopAudio();
-      speakWithBrowser(text, bubble);
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     }
   }
 
@@ -1526,6 +1582,7 @@
     isStreaming = true;
 
     let accumulated = '';
+    let spokenIndex = 0;
     let started = false;
     const cursor = document.createElement('span');
     cursor.className = 'cursor';
@@ -1575,6 +1632,12 @@
             bubble.innerHTML = renderMarkdown(accumulated);
             bubble.appendChild(cursor);
             scrollBottom();
+
+            if (voiceEnabled) {
+              const { sentences, newIndex } = extractSentences(accumulated, spokenIndex);
+              sentences.forEach(s => enqueueSpeech(s, bubble));
+              spokenIndex = newIndex;
+            }
           }
 
           if (evt.done) {
@@ -1582,7 +1645,9 @@
             turns++;
             turnsValEl.textContent = turns;
             persistAIMessage(accumulated, aiTime);
-            speakText(accumulated, bubble);
+            if (voiceEnabled) {
+              enqueueSpeech(accumulated.slice(spokenIndex), bubble);
+            }
           }
         }
       }
